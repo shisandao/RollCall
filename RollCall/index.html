@@ -79,6 +79,14 @@ function updateStuList(stuList) {
 	});
 }
 
+function disruption(arr) {
+    for (let i = 1; i < arr.length; i++) {
+        const random = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[random]] = [arr[random], arr[i]];
+    }
+    return arr;
+}
+
 function updateTurntable(stuList) {
 	var turntableData = [];
 	stuList.forEach(stu => {
@@ -86,6 +94,7 @@ function updateTurntable(stuList) {
 		temp.text = stu.no;
 		turntableData.push(temp);
 	});
+	turntableData = disruption(turntableData);
 	$('#turntable-container').children("ul").remove()
 	gbTurntable.init({
         id: 'turntable',
