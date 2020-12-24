@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>点名器</title>
+<link rel="stylesheet" type="text/css" href="css/easyui.css">
+<link rel="stylesheet" href="css/GB-canvas-turntable.css">
+<script type="text/javascript" src="js/xlsx.core.min.js"></script>
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript" src="js/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="js/GB-canvas-turntable.min.js"></script>
+</head>
+
+<script type="text/javascript">
+
+var classList = [];
+function onChange(event) {
+    getexcelData = []
+    var file = event.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function(event) {
+          var data = event.target.result;
+          var workbook = XLSX.read(data, {type: 'binary'});
+          outputWorkbook(workbook)
+    }
+    reader.readAsBinaryString(file);
+}
+
+// 读取 excel文件
+function outputWorkbook(workbook) {
+    var sheetNames = workbook.SheetNames; // 工作表名称集合
+    sheetNames.forEach(name => {
+        var worksheet = workbook.Sheets[name]; // 只能通过工作表名称来获取指定工作表
+        var classS = {};
+        var id = classList.length;
+        classS.id = id;
+        classS.name = name;
+        classS.stuList = [];
+        var index=0;
+        for(var key in worksheet) {
+            // v是读取单元格的原始值
+            if (key, key[0] !== '!') {
+            	if (index>=2) {
+            		if (index%2 == 0) {
+            			var stu = {};
+            			stu.no = worksheet[key].v;
+            			classS.stuList.push(stu);
+            		} else {
+            			classS.stuList[(index-3)/2].name = worksheet[key].v;
+            		}
+            	}
+            	index++;
+            }
+        }
+        classList.push(classS);
+    });
+    updateClassList();
+}
+
+function updateClassList() {
+	$('#classCombobox').combobox({
+        valueField:'id',
+        textField:'name',
+        data: classList,
+        onSelect: function (param) {
+        	updateStuList(classList[param.id].stuList);
+        	updateTurntable(classList[param.id].stuList);
+        }
+    });
+}
+
+function updateStuList(stuList) {
+	$('#stuDataGrid').datagrid({
+        columns:[[
+    		{field:'no',title:'学号',width:100},
+    		{field:'name',title:'姓名',width:100},
+        ]],
+		data: stuList
+	});
+}
+
+function updateTurntable(stuList) {
+	var turntableData = [];
+	stuList.forEach(stu => {
+		var temp = {};
+		temp.text = stu.no;
+		turntableData.push(temp);
+	});
+	$('#turntable-container').children("ul").remove()
+	gbTurntable.init({
+        id: 'turntable',
+        config: function(callback){
+            // 获取奖品信息
+            callback && callback(turntableData)
+        },
+        getPrize: function(callback) {
+            // 获取中奖信息
+            var num = Math.random() * turntableData.length >>> 0,   //奖品ID
+                chances = num;  // 可抽奖次数
+                callback && callback([num, chances]);   
+        },
+        gotBack: function(data) {
+        	stuList.forEach(stu => {
+        		if (stu.no == data) {
+        			var pop = $('#pop');
+        			pop.find('div').text(stu.no+"  "+stu.name);
+        			pop.show();
+        			pop.focus();
+        		}
+        	});
+        }
+    }); 
+}
+
+</script>
+<body>
+	<div class="easyui-panel" style="width:1366px;padding-top:30px;height:768px;padding-left:20px;background: 
+url('img/background.jpg');">
+		<div style="float:right;opacity:0.7;">
+			<div style="margin-bottom:20px">
+        	<input id="classCombobox" style="width:202px"/>
+        	<input id="stuDataGrid" style="height:530px;width:202px"/>
+        	<script type="text/javascript">
+        	$('#classCombobox').combobox({
+            	valueField:'id',
+            	textField:'name',
+            	data: []
+        	});
+        	$('#stuDataGrid').datagrid({
+            	columns:[[
+        			{field:'no',title:'学号',width:100},
+        			{field:'name',title:'姓名',width:100}
+            	]]
+        	});
+			</script>
+    		</div>
+			<input type="file" onchange="onChange(event)" title="选择excel表" style="width:202px"/>
+    	</div>
+    	<section id="turntable" class="gb-turntable">
+        	<div id="turntable-container" class="gb-turntable-container">
+            	<canvas class="gb-turntable-canvas" width="300px" height="300px">抱歉！浏览器不支持。</canvas>
+        	</div>
+        	<a class="gb-turntable-btn" href="javascript:;">点名</a>    
+    	</section>
+    	
+    	<div id="pop" tabindex="1" style="position:relative;width:450px;height:300px;border-radius:10%;border:25px solid #E44025;left:458px;top:-234px;display:none">
+    		<div style="width:400px;height:250px;line-height: 250px;background-color:#ffcb3f;vertical-align: middle;text-align: center;
+    				color:#e4370e;font-weight:bold;font-family:华文新魏;font-size:60px;">
+    		</div>
+    	</div>
+    	
+    	<script>
+    	$('#pop').blur(function(){
+    		$('#pop').hide();
+    	});
+    	</script>
+    	
+    	
+    </div>
+</body>
+</html>
